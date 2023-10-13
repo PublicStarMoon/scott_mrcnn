@@ -315,6 +315,17 @@ class Dataset(object):
         self.image_from_source_map = {"{}.{}".format(info['source'], info['id']): id
                                       for info, id in zip(self.image_info, self.image_ids)}
 
+        # image name to image id
+        self.image_name_to_id = {
+            "{}".format(info['id']): id
+            for info, id in zip(self.image_info, self.image_ids)
+        }
+
+        self.image_id_to_name = {
+            id: "{}".format(info['id'])
+            for info, id in zip(self.image_info, self.image_ids)
+        }
+
         # Map sources to class_ids they support
         self.sources = list(set([i['source'] for i in self.class_info]))
         self.source_class_ids = {}
@@ -529,8 +540,8 @@ def minimize_mask(bbox, mask, mini_shape):
         if m.size == 0:
             raise Exception("Invalid bounding box with area of zero")
         # Resize with bilinear interpolation
-        m = resize(m, mini_shape)
-        mini_mask[:, :, i] = np.around(m).astype(np.bool)
+        m = resize(m, mini_shape, order=0)
+        mini_mask[:, :, i] = np.around(m).astype(bool)
     return mini_mask
 
 
@@ -548,7 +559,7 @@ def expand_mask(bbox, mini_mask, image_shape):
         w = x2 - x1
         # Resize with bilinear interpolation
         m = resize(m, (h, w))
-        mask[y1:y2, x1:x2, i] = np.around(m).astype(np.bool)
+        mask[y1:y2, x1:x2, i] = np.around(m).astype(bool)
     return mask
 
 
@@ -568,10 +579,10 @@ def unmold_mask(mask, bbox, image_shape):
     threshold = 0.5
     y1, x1, y2, x2 = bbox
     mask = resize(mask, (y2 - y1, x2 - x1))
-    mask = np.where(mask >= threshold, 1, 0).astype(np.bool)
+    mask = np.where(mask >= threshold, 1, 0).astype(bool)
 
     # Put the mask in the right location.
-    full_mask = np.zeros(image_shape[:2], dtype=np.bool)
+    full_mask = np.zeros(image_shape[:2], dtype=bool)
     full_mask[y1:y2, x1:x2] = mask
     return full_mask
 
