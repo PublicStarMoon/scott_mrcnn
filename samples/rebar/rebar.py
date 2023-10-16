@@ -129,11 +129,13 @@ class RebarInferenceConfig(RebarConfig):
     IMAGES_PER_GPU = 1
     # Don't resize imager for inferencing
     # IMAGE_RESIZE_MODE = "pad64"
-    # Non-max suppression threshold to filter RPN proposals.
-    # You can increase this during training to generate more propsals.
-    # RPN_NMS_THRESHOLD = 0.7 
     # Skip detections with < 90% confidence
-    DETECTION_MIN_CONFIDENCE = 0
+    # Minimum probability value to accept a detected instance
+    # ROIs below this threshold are skipped
+    DETECTION_MIN_CONFIDENCE = 0.9
+
+    # Non-maximum suppression threshold for detection
+    DETECTION_NMS_THRESHOLD = 0.3
 
 
 ############################################################
@@ -492,6 +494,21 @@ def test_mask(image_id):
             print('{} is all zero'.format(i))
 
 
+def load_image(image_path):
+    # Load image
+    img = skimage.io.imread(image_path)
+    # If grayscale. Convert to RGB for consistency.
+    if img.ndim != 3:
+        img = skimage.color.gray2rgb(img)
+    # If has an alpha channel, remove it for consistency
+    if img.shape[-1] == 4:
+        img = skimage.color.rgba2rbg(img)
+
+    # conver to gray
+    gray_img = np.uint8(skimage.color.gray2rgb(skimage.color.rgb2gray(img)) * 255)
+    return img, gray_img
+
+
 def detect_and_color_splash(model, image_path=None, aug=False):
     assert image_path
 
@@ -500,20 +517,6 @@ def detect_and_color_splash(model, image_path=None, aug=False):
         # Run model detection and generate the color splash effect
         print("Running on {}".format(image_path))
         # Read image
-        def load_image(image_path):
-            # Load image
-            img = skimage.io.imread(image_path)
-            # If grayscale. Convert to RGB for consistency.
-            if img.ndim != 3:
-                img = skimage.color.gray2rgb(img)
-            # If has an alpha channel, remove it for consistency
-            if img.shape[-1] == 4:
-                img = skimage.color.rgba2rbg(img)
-
-            # conver to gray
-            gray_img = np.uint8(skimage.color.gray2rgb(skimage.color.rgb2gray(img)) * 255)
-            return img, gray_img
-
         image, gray_image = load_image(image_path)
 
         if aug:
